@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { TranslationProvider } from '@/translations';
 import { Layout } from '@/app/components/Layout';
 import { Home } from '@/app/pages/Home';
@@ -11,34 +10,56 @@ import { Gallery } from '@/app/pages/Gallery';
 import { Contact } from '@/app/pages/Contact';
 import { Admin } from '@/app/pages/Admin';
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
+// Wrapper компонент для Layout'а
+function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Layout>
+      {children}
+    </Layout>
+  );
 }
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <RootLayout><Home /></RootLayout>,
+  },
+  {
+    path: '/about',
+    element: <RootLayout><About /></RootLayout>,
+  },
+  {
+    path: '/teachers',
+    element: <RootLayout><Teachers /></RootLayout>,
+  },
+  {
+    path: '/students',
+    element: <RootLayout><Students /></RootLayout>,
+  },
+  {
+    path: '/news',
+    element: <RootLayout><News /></RootLayout>,
+  },
+  {
+    path: '/gallery',
+    element: <RootLayout><Gallery /></RootLayout>,
+  },
+  {
+    path: '/contact',
+    element: <RootLayout><Contact /></RootLayout>,
+  },
+  {
+    path: '/admin',
+    element: <RootLayout><Admin /></RootLayout>,
+  },
+], {
+  basename: '/'
+});
 
 export default function App() {
   return (
     <TranslationProvider>
-      <Router>
-        <ScrollToTop />
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/teachers" element={<Teachers />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/news" element={<News />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/admin" element={<Admin />} />
-          </Routes>
-        </Layout>
-      </Router>
+      <RouterProvider router={router} />
     </TranslationProvider>
   );
 }
