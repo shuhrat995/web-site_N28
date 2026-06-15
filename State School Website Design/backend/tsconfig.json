@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler", // "node" dan "bundler" ga o'zgartirildi
+    "lib": ["ES2020", "DOM", "DOM.Iterable"], // React/Web uchun DOM qo'shildi
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true, // Bundler rejimida kerak bo'lishi mumkin
+    "noEmit": true, // Agar Vite ishlatayotgan bo'lsangiz, TS faqat tekshirish uchun
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "../styles/fonts.css";
+
+@source "../**/*.{js,ts,jsx,tsx}";
+
+/* Theme variables and layers from theme.css */
+@layer base {
+  :root {
+    --primary-600: #2563eb;
+    /* ... boshqa ranglarni theme.css dan ko'chirib o'ting ... */
+  }
+  .container-custom {
+    @apply max-w-[1280px] mx-auto px-6;
+  }
+}

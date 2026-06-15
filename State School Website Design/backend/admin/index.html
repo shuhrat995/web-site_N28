@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div id="loginScreen" class="login-container">
+    <div class="login-box">
+      <h1>🔐 Admin Panel</h1>
+      <form id="loginForm">
+        <div class="form-group"><label>Username</label><input type="text" id="username" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="password" required></div>
+        <button type="submit" class="btn btn-primary">Login</button>
+        <div id="loginError" class="error-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminDashboard" class="dashboard-container" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-header"><h2>📚 Admin</h2></div>
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-link active" data-section="dashboard"><span>📊</span> Dashboard</a>
+        <a href="#pages" class="nav-link" data-section="pages"><span>📄</span> Page Content</a>
+        <a href="#content" class="nav-link" data-section="content"><span>📝</span> News</a>
+        <a href="#add-content" class="nav-link" data-section="add-content"><span>➕</span> Add News</a>
+        <a href="#teachers" class="nav-link" data-section="teachers"><span>👨‍🏫</span> Teachers</a>
+        <a href="#add-teacher" class="nav-link" data-section="add-teacher"><span>➕</span> Add Teacher</a>
+      </nav>
+      <div class="sidebar-footer"><button id="logoutBtn" class="btn btn-danger">🚪 Logout</button></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <h1 id="pageTitle">Dashboard</h1>
+        <span id="adminName"></span>
+      </header>
+      <div class="content-wrapper">
+        <section id="section-dashboard" class="section active">
+          <div class="stats-grid">
+            <div class="stat-card"><h3>News</h3><p class="stat-number" id="totalContent">0</p></div>
+            <div class="stat-card"><h3>Published</h3><p class="stat-number" id="publishedContent">0</p></div>
+            <div class="stat-card"><h3>Teachers</h3><p class="stat-number" id="totalTeachers">0</p></div>
+          </div>
+          <div class="recent-content"><h2>Recent</h2><div id="recentContentList"></div></div>
+        </section>
+
+        <section id="section-pages" class="section">
+          <h2>📄 Edit Page Content</h2>
+          <div class="page-tabs">
+            <button class="tab-btn active" onclick="loadPageEditor('home')">🏠 Home</button>
+            <button class="tab-btn" onclick="loadPageEditor('about')">ℹ️ About</button>
+            <button class="tab-btn" onclick="loadPageEditor('students')">🎓 Students</button>
+            <button class="tab-btn" onclick="loadPageEditor('contact')">📞 Contact</button>
+            <button class="tab-btn" onclick="loadPageEditor('footer')">🔻 Footer</button>
+          </div>
+          <div id="pageEditorContent" class="page-editor"></div>
+          <button onclick="savePageContent()" class="btn btn-success">💾 Save & Reload Website</button>
+        </section>
+
+        <section id="section-content" class="section">
+          <div class="section-header">
+            <div class="filters">
+              <select id="categoryFilter"><option value="">All</option><option value="news">News</option><option value="gallery">Gallery</option></select>
+            </div>
+            <button class="btn btn-primary" onclick="showSection('add-content')">+ Add</button>
+          </div>
+          <div id="contentList" class="content-list"></div>
+        </section>
+
+        <section id="section-add-content" class="section">
+          <form id="contentForm" enctype="multipart/form-data">
+            <input type="hidden" id="contentId">
+            <div class="form-group"><label for="contentTitle">Title *</label><input type="text" id="contentTitle" required maxlength="200"><span class="char-count"><span id="titleCount">0</span>/200</span></div>
+            <div class="form-group"><label for="contentCategory">Category *</label><select id="contentCategory" required><option value="">Select</option><option value="news">News</option><option value="gallery">Gallery</option></select></div>
+            <div class="form-group"><label for="contentDescription">Description</label><input type="text" id="contentDescription" maxlength="500"><span class="char-count"><span id="descriptionCount">0</span>/500</span></div>
+            <div class="form-group"><label for="contentText">Content Text</label><textarea id="contentText" rows="8" maxlength="2500"></textarea><span class="char-count"><span id="contentTextCount">0</span>/2500</span></div>
+            <div class="form-group"><label for="contentImage">Image (Max 500KB)</label><input type="file" id="contentImage" accept="image/*"><div id="imagePreview" class="image-preview"></div></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="contentPublished" checked> Publish</label></div>
+            <div class="form-actions"><button type="submit" class="btn btn-success">💾 Save</button><button type="button" class="btn btn-secondary" onclick="resetContentForm()">🔄 Reset</button></div>
+          </form>
+        </section>
+
+        <section id="section-teachers" class="section">
+          <div class="section-header"><h2>Teachers</h2><button class="btn btn-primary" onclick="showSection('add-teacher')">+ Add</button></div>
+          <div id="teachersList" class="content-list"></div>
+        </section>
+
+        <section id="section-add-teacher" class="section">
+          <form id="teacherForm" enctype="multipart/form-data">
+            <input type="hidden" id="teacherId">
+            <div class="form-group"><label for="teacherName">Name *</label><input type="text" id="teacherName" required></div>
+            <div class="form-group"><label for="teacherSubject">Subject *</label><input type="text" id="teacherSubject" required></div>
+            <div class="form-group"><label for="teacherBio">Bio</label><textarea id="teacherBio" rows="4"></textarea></div>
+            <div class="form-group"><label for="teacherExperience">Experience (years)</label><input type="number" id="teacherExperience" min="0" value="0"></div>
+            <div class="form-group"><label for="teacherImage">Photo (Max 500KB)</label><input type="file" id="teacherImage" accept="image/*"><div id="teacherImagePreview" class="image-preview"></div></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="teacherActive" checked> Active</label></div>
+            <div class="form-actions"><button type="submit" class="btn btn-success">💾 Save</button><button type="button" class="btn btn-secondary" onclick="resetTeacherForm()">🔄 Reset</button></div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="js/admin.js"></script>
+</body>
+</html>
