@@ -78,8 +78,7 @@ A premium, fully functional school website built with React, TypeScript, and Exp
 7. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3001
-   - Admin Panel: http://localhost:5173/admin
-   - Hidden admin aliases: `/maktab28-boshqaruv`, `/xonqa-28-panel`
+   - Admin Panel: http://localhost:5173/maktab28-boshqaruv
 
 ### Admin Credentials
 - Admin credentials are loaded from `backend/.env`

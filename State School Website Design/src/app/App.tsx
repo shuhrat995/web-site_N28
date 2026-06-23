@@ -11,7 +11,7 @@ import { Gallery } from '@/app/pages/Gallery';
 import { Contact } from '@/app/pages/Contact';
 import { Admin } from '@/app/pages/Admin';
 
-const ADMIN_PATHS = ['/admin', '/maktab28-boshqaruv', '/xonqa-28-panel'];
+const ADMIN_PATH = '/maktab28-boshqaruv';
 
 function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -50,10 +50,10 @@ const router = createBrowserRouter([
     path: '/contact',
     element: <RootLayout><Contact /></RootLayout>,
   },
-  ...ADMIN_PATHS.map(path => ({
-    path,
+  {
+    path: ADMIN_PATH,
     element: <RootLayout><Admin /></RootLayout>,
-  })),
+  },
 ], {
   basename: '/'
 });

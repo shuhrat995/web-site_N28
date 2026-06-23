@@ -32,15 +32,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/admin",
-      "destination": "/index.html"
-    },
-    {
       "source": "/maktab28-boshqaruv",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/xonqa-28-panel",
       "destination": "/index.html"
     }
   ]
