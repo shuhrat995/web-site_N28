@@ -1,1 +1,1 @@
-export { config, default } from '../vercel-api-proxy';
+export { config, default } from '../vercel-api-proxy.js';

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd \"State School Website Design\" && npm install && npm run build",
+  "buildCommand": "npm install && cd \"State School Website Design\" && npm install && npm run build",
   "outputDirectory": "State School Website Design/dist",
   "env": {},
   "rewrites": [

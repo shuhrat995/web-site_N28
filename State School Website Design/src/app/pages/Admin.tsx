@@ -31,6 +31,102 @@ const API_URL = API_BASE_URL;
 
 type AdminTab = 'dashboard' | 'home' | 'about' | 'staff' | 'teachers' | 'students' | 'news' | 'gallery' | 'contact' | 'footer' | 'logs' | 'security';
 
+const tabTitles: Record<AdminTab, string> = {
+  dashboard: 'Boshqaruv',
+  home: 'Bosh sahifa',
+  about: 'Maktab haqida',
+  staff: 'Maʼmuriyat',
+  teachers: 'Oʻqituvchilar',
+  students: 'Oʻquvchilar',
+  news: 'Yangiliklar',
+  gallery: 'Galereya',
+  contact: 'Aloqa',
+  footer: 'Pastki qism',
+  logs: 'Jurnal',
+  security: 'Xavfsizlik'
+};
+
+const fieldLabels: Record<string, string> = {
+  title: 'Sarlavha',
+  subtitle: 'Qisqa izoh',
+  banner_image: 'Banner rasmi',
+  primary_button: 'Asosiy tugma',
+  secondary_button: 'Ikkinchi tugma',
+  intro_video: 'Kirish videosi',
+  students_num: 'Oʻquvchilar soni',
+  students_label: 'Oʻquvchilar matni',
+  teachers_num: 'Oʻqituvchilar soni',
+  teachers_label: 'Oʻqituvchilar matni',
+  grades_num: 'Sinflar soni',
+  grades_label: 'Sinflar matni',
+  years_num: 'Yillar soni',
+  years_label: 'Yillar matni',
+  card1_value: '1-karta qiymati',
+  card1_label: '1-karta matni',
+  card2_value: '2-karta qiymati',
+  card2_label: '2-karta matni',
+  card3_value: '3-karta qiymati',
+  card3_label: '3-karta matni',
+  card4_value: '4-karta qiymati',
+  card4_label: '4-karta matni',
+  main: 'Asosiy matn',
+  desc: 'Tavsif',
+  desc1: '1-tavsif',
+  desc2: '2-tavsif',
+  desc3: '3-tavsif',
+  image_url: 'Rasm havolasi',
+  video_url: 'Video havolasi',
+  items: 'Roʻyxat',
+  phone: 'Telefon',
+  email: 'Email',
+  telegram: 'Telegram',
+  address: 'Manzil',
+  map: 'Xarita',
+  hours: 'Ish vaqti',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  items_json: 'Sinflar maʼlumoti',
+  group_image: 'Guruh rasmi',
+  sports_image: 'Sport rasmi',
+  events_image: 'Tadbirlar rasmi',
+  name: 'Ism-familiya',
+  subject: 'Fan',
+  experience_years: 'Tajriba yili',
+  bio: 'Biografiya',
+  social_links: 'Ijtimoiy havolalar',
+  grade: 'Sinf',
+  class_name: 'Sinf nomi',
+  group: 'Guruh',
+  parent_name: 'Ota-ona ismi',
+  parent_phone: 'Ota-ona telefoni',
+  achievements: 'Yutuqlar',
+  certificates: 'Sertifikatlar',
+  position: 'Lavozim',
+  description: 'Tavsif',
+  order_num: 'Tartib raqami',
+  content_text: 'Matn',
+  slug: 'Slug',
+  publish_date: 'Nashr sanasi',
+  album: 'Albom'
+};
+
+const sectionLabels: Record<string, string> = {
+  hero: 'Hero qismi',
+  stats: 'Statistika',
+  achievements: 'Yutuqlar',
+  announcements: 'Eʼlonlar',
+  cta: 'Chaqiriq qismi',
+  history: 'Tarix',
+  mission: 'Missiya',
+  vision: 'Maqsad',
+  certificates: 'Sertifikatlar',
+  media: 'Media',
+  info: 'Maʼlumot',
+  classes: 'Sinflar',
+  activities: 'Faoliyatlar'
+};
+
 type ContentItem = {
   id: number;
   title: string;
@@ -203,7 +299,7 @@ export function Admin() {
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 403) {
       clearSession();
-      throw new Error('Session expired or invalid. Please login again.');
+      throw new Error('Sessiya muddati tugagan yoki notoʻgʻri. Qayta kiring.');
     }
     if (!res.ok) throw new Error(data.error || `${res.status} ${res.statusText} (${path})`);
     return data;
@@ -230,7 +326,7 @@ export function Admin() {
       if (logsRes.status === 'fulfilled') setLogs(logsRes.value.logs || []);
       if (notificationsRes.status === 'fulfilled') setNotifications(notificationsRes.value.notifications || []);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to load admin data');
+      toast.error(error.message || 'Admin maʼlumotlarini yuklab boʻlmadi');
     }
   }
 
@@ -244,14 +340,14 @@ export function Admin() {
         body: JSON.stringify(loginData)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!res.ok) throw new Error(data.error || 'Kirishda xatolik');
       if (data.device?.id) {
         const nextDeviceId = String(data.device.id);
         sessionStorage.setItem('adminDeviceId', nextDeviceId);
         setDeviceId(nextDeviceId);
       }
       setToken('cookie-session');
-      toast.success('Welcome back');
+      toast.success('Xush kelibsiz');
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -259,7 +355,7 @@ export function Admin() {
 
   async function savePage(page: 'home' | 'about' | 'contact' | 'students' | 'footer') {
     await api(`/sections/${page}`, { method: 'PUT', body: JSON.stringify(pageContent[page] || {}) });
-    toast.success(`${page} page updated`);
+    toast.success(`${tabTitles[page as AdminTab] || page} saqlandi`);
     loadAll();
   }
 
@@ -270,7 +366,7 @@ export function Admin() {
     await api(path, { method: editing?.type === 'teacher' ? 'PUT' : 'POST', body: form });
     setTeacherForm({ name: '', subject: '', experience_years: 0, phone: '', bio: '', social_links: '', is_active: true });
     setEditing(null);
-    toast.success('Teacher saved');
+    toast.success('Oʻqituvchi saqlandi');
     loadAll();
   }
 
@@ -281,7 +377,7 @@ export function Admin() {
     await api(path, { method: editing?.type === 'student' ? 'PUT' : 'POST', body: form });
     setStudentForm({ name: '', grade: '', class_name: '', group: '', parent_name: '', parent_phone: '', achievements: '', certificates: '' });
     setEditing(null);
-    toast.success('Student saved');
+    toast.success('Oʻquvchi saqlandi');
     loadAll();
   }
 
@@ -292,7 +388,7 @@ export function Admin() {
     await api(path, { method: editing?.type === 'staff' ? 'PUT' : 'POST', body: form });
     setStaffForm({ name: '', position: '', description: '', order_num: (staff.length || 0) + 1, is_active: true });
     setEditing(null);
-    toast.success('Administration member saved');
+    toast.success('Maʼmuriyat aʼzosi saqlandi');
     loadAll();
   }
 
@@ -304,19 +400,19 @@ export function Admin() {
     await api(path, { method: editing?.type === 'content' ? 'PUT' : 'POST', body: form });
     setContentForm({ ...emptyContent, category: activeTab === 'gallery' ? 'gallery' : 'news' });
     setEditing(null);
-    toast.success(activeTab === 'gallery' ? 'Media saved' : 'News saved');
+    toast.success(activeTab === 'gallery' ? 'Media saqlandi' : 'Yangilik saqlandi');
     loadAll();
   }
 
   async function deleteItem(path: string) {
     await api(path, { method: 'DELETE' });
-    toast.success('Deleted');
+    toast.success('Oʻchirildi');
     loadAll();
   }
 
   async function publishItem(id: number) {
     await api(`/content/${id}/publish`, { method: 'PATCH' });
-    toast.success('Published');
+    toast.success('Eʼlon qilindi');
     loadAll();
   }
 
@@ -327,7 +423,7 @@ export function Admin() {
       body: JSON.stringify(passwordForm)
     });
     setPasswordForm({ currentPassword: '', newPassword: '' });
-    toast.success('Password changed');
+    toast.success('Parol oʻzgartirildi');
   }
 
   async function updateSecretKey(e: FormEvent) {
@@ -337,7 +433,7 @@ export function Admin() {
       body: JSON.stringify({ secretKey })
     });
     setSecretKey('');
-    toast.success('Secret key updated');
+    toast.success('Maxfiy soʻz yangilandi');
   }
 
   async function logout() {
@@ -356,11 +452,11 @@ export function Admin() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <motion.form initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleLogin} className="w-full max-w-md rounded-lg border border-white/10 bg-white p-8 shadow-2xl">
           <Shield className="size-12 text-cyan-600 mb-5" />
-          <h1 className="text-2xl font-bold text-slate-950">Admin Login</h1>
-          <p className="text-sm text-slate-500 mb-6">Protected educational center control panel</p>
-          <input className="admin-input" placeholder="Username" value={loginData.username} onChange={e => setLoginData({ ...loginData, username: e.target.value })} />
-          <input className="admin-input mt-3" type="password" placeholder="Password" value={loginData.password} onChange={e => setLoginData({ ...loginData, password: e.target.value })} />
-          <Button className="w-full mt-5 bg-cyan-700 hover:bg-cyan-800">Login</Button>
+          <h1 className="text-2xl font-bold text-slate-950">Admin Kirish</h1>
+          <p className="text-sm text-slate-500 mb-6">28-maktab boshqaruv paneli</p>
+          <input className="admin-input" placeholder="Login" value={loginData.username} onChange={e => setLoginData({ ...loginData, username: e.target.value })} />
+          <input className="admin-input mt-3" type="password" placeholder="Parol" value={loginData.password} onChange={e => setLoginData({ ...loginData, password: e.target.value })} />
+          <Button className="w-full mt-5 bg-cyan-700 hover:bg-cyan-800">Kirish</Button>
         </motion.form>
       </div>
     );
@@ -375,7 +471,7 @@ export function Admin() {
               <div className="grid size-10 place-items-center rounded-lg bg-cyan-700 text-white"><Shield className="size-5" /></div>
               <div>
                 <h1 className="font-bold">Admin Panel</h1>
-                <p className="text-xs text-slate-500">Education Center CMS</p>
+                <p className="text-xs text-slate-500">28-maktab CMS</p>
               </div>
             </div>
           </div>
@@ -393,13 +489,13 @@ export function Admin() {
           <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 lg:px-8">
               <div>
-                <p className="text-xs uppercase tracking-wide text-cyan-700 dark:text-cyan-300">Control Center</p>
-                <h2 className="text-xl font-bold capitalize">{activeTab}</h2>
+                <p className="text-xs uppercase tracking-wide text-cyan-700 dark:text-cyan-300">Boshqaruv markazi</p>
+                <h2 className="text-xl font-bold">{tabTitles[activeTab]}</h2>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="h-10 w-64 rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Qidirish..." className="h-10 w-64 rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
                 </div>
                 <button onClick={() => setDarkMode(!darkMode)} className="admin-icon-button">{darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}</button>
                 <button onClick={logout} className="admin-icon-button"><LogOut className="size-4" /></button>
@@ -417,21 +513,21 @@ export function Admin() {
             {activeTab === 'home' && <PageEditor page="home" data={pageContent} setData={setPageContent} onSave={savePage} />}
             {activeTab === 'about' && <PageEditor page="about" data={pageContent} setData={setPageContent} onSave={savePage} />}
             {activeTab === 'staff' && (
-              <CrudLayout title="Administration" onSubmit={saveStaff} form={<StaffForm form={staffForm} setForm={setStaffForm} />} list={<StaffList staff={visibleStaff} edit={(s) => { setEditing({ type: 'staff', id: s.id }); setStaffForm({ ...s }); }} remove={(id) => deleteItem(`/staff/${id}`)} />} />
+              <CrudLayout title="Maʼmuriyat" onSubmit={saveStaff} form={<StaffForm form={staffForm} setForm={setStaffForm} />} list={<StaffList staff={visibleStaff} edit={(s) => { setEditing({ type: 'staff', id: s.id }); setStaffForm({ ...s }); }} remove={(id) => deleteItem(`/staff/${id}`)} />} />
             )}
             {activeTab === 'contact' && <PageEditor page="contact" data={pageContent} setData={setPageContent} onSave={savePage} />}
             {activeTab === 'footer' && <PageEditor page="footer" data={pageContent} setData={setPageContent} onSave={savePage} />}
             {activeTab === 'teachers' && (
-              <CrudLayout title="Teachers" onSubmit={saveTeacher} form={<TeacherForm form={teacherForm} setForm={setTeacherForm} />} list={<TeacherList teachers={visibleTeachers} edit={(t) => { setEditing({ type: 'teacher', id: t.id }); setTeacherForm({ ...t, social_links: JSON.stringify(t.social_links || {}) }); }} remove={(id) => deleteItem(`/teachers/${id}`)} />} />
+              <CrudLayout title="Oʻqituvchilar" onSubmit={saveTeacher} form={<TeacherForm form={teacherForm} setForm={setTeacherForm} />} list={<TeacherList teachers={visibleTeachers} edit={(t) => { setEditing({ type: 'teacher', id: t.id }); setTeacherForm({ ...t, social_links: JSON.stringify(t.social_links || {}) }); }} remove={(id) => deleteItem(`/teachers/${id}`)} />} />
             )}
             {activeTab === 'students' && (
               <div className="space-y-6">
                 <PageEditor page="students" data={pageContent} setData={setPageContent} onSave={() => savePage('students' as any)} />
-                <CrudLayout title="Students" onSubmit={saveStudent} form={<StudentForm form={studentForm} setForm={setStudentForm} />} list={<StudentList students={visibleStudents} edit={(s) => { setEditing({ type: 'student', id: s.id }); setStudentForm({ ...s, achievements: (s.achievements || []).join(', '), certificates: (s.certificates || []).join(', ') }); }} remove={(id) => deleteItem(`/students/${id}`)} mark={(id) => api(`/students/${id}/attendance`, { method: 'PATCH', body: JSON.stringify({ date: new Date().toISOString().slice(0, 10), status: 'present' }) }).then(loadAll)} />} />
+                <CrudLayout title="Oʻquvchilar" onSubmit={saveStudent} form={<StudentForm form={studentForm} setForm={setStudentForm} />} list={<StudentList students={visibleStudents} edit={(s) => { setEditing({ type: 'student', id: s.id }); setStudentForm({ ...s, achievements: (s.achievements || []).join(', '), certificates: (s.certificates || []).join(', ') }); }} remove={(id) => deleteItem(`/students/${id}`)} mark={(id) => api(`/students/${id}/attendance`, { method: 'PATCH', body: JSON.stringify({ date: new Date().toISOString().slice(0, 10), status: 'present' }) }).then(loadAll)} />} />
               </div>
             )}
             {(activeTab === 'news' || activeTab === 'gallery') && (
-              <CrudLayout title={activeTab === 'news' ? 'News' : 'Gallery'} onSubmit={saveContent} form={<ContentForm form={contentForm} setForm={setContentForm} gallery={activeTab === 'gallery'} />} list={<ContentList items={visibleContent} edit={(item) => { setEditing({ type: 'content', id: item.id }); setContentForm({ ...emptyContent, ...item }); }} remove={(id) => deleteItem(`/content/${id}`)} publish={publishItem} />} />
+              <CrudLayout title={activeTab === 'news' ? 'Yangiliklar' : 'Galereya'} onSubmit={saveContent} form={<ContentForm form={contentForm} setForm={setContentForm} gallery={activeTab === 'gallery'} />} list={<ContentList items={visibleContent} edit={(item) => { setEditing({ type: 'content', id: item.id }); setContentForm({ ...emptyContent, ...item }); }} remove={(id) => deleteItem(`/content/${id}`)} publish={publishItem} />} />
             )}
             {activeTab === 'security' && (
               <SecurityPanel
@@ -453,14 +549,14 @@ export function Admin() {
 
 function Dashboard({ stats, notifications }: { stats: Record<string, number>; notifications: any[] }) {
   const cards = [
-    ['Teachers', stats.teachers || 0, GraduationCap],
-    ['Students', stats.students || 0, Users],
-    ['Administration', stats.staff || 0, Shield],
-    ['News', stats.news || 0, FileText],
-    ['Gallery', stats.gallery || 0, GalleryHorizontalEnd],
-    ['Published', stats.published || 0, BookOpen],
-    ['Drafts', stats.drafts || 0, Pencil],
-    ['Views', stats.views || 0, Activity]
+    ['Oʻqituvchilar', stats.teachers || 0, GraduationCap],
+    ['Oʻquvchilar', stats.students || 0, Users],
+    ['Maʼmuriyat', stats.staff || 0, Shield],
+    ['Yangiliklar', stats.news || 0, FileText],
+    ['Galereya', stats.gallery || 0, GalleryHorizontalEnd],
+    ['Eʼlon qilingan', stats.published || 0, BookOpen],
+    ['Qoralamalar', stats.drafts || 0, Pencil],
+    ['Koʻrishlar', stats.views || 0, Activity]
   ];
   return (
     <div className="space-y-6">
@@ -474,10 +570,10 @@ function Dashboard({ stats, notifications }: { stats: Record<string, number>; no
         ))}
       </div>
       <div className="admin-card">
-        <h3 className="font-bold mb-3">Real-time Notifications</h3>
+        <h3 className="font-bold mb-3">Bildirishnomalar</h3>
         <div className="space-y-2">
           {notifications.slice(0, 6).map(item => <p key={item.id} className={notificationClass(item)}>{item.message}</p>)}
-          {!notifications.length && <p className="text-sm text-slate-500">No notifications yet.</p>}
+          {!notifications.length && <p className="text-sm text-slate-500">Hozircha bildirishnoma yoʻq.</p>}
         </div>
       </div>
     </div>
@@ -511,13 +607,13 @@ function PageEditor({ page, data, setData, onSave }: any) {
     <div className="space-y-5">
       {Object.entries(schema).map(([section, keys]) => (
         <div key={section} className="admin-card">
-          <h3 className="font-bold capitalize mb-4">{section}</h3>
+          <h3 className="font-bold mb-4">{sectionLabels[section] || section}</h3>
           <div className="grid gap-3 md:grid-cols-2">
             {(keys as readonly string[]).map(key => (
               <div key={key} className={section === 'classes' && key === 'items_json' ? 'md:col-span-2' : ''}>
                 {page === 'students' && section === 'classes' && key === 'items_json' ? (
                   <div className="rounded-md border border-slate-700 p-3">
-                    <div className="mb-3 text-sm text-slate-400">1-11 sinf bo'yicha sonlarni kiriting</div>
+                    <div className="mb-3 text-sm text-slate-400">1-11 sinf boʻyicha sonlarni kiriting</div>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                       {classRows.map((row) => (
                         <div key={row.grade} className="rounded-md border border-slate-700 p-3">
@@ -532,7 +628,7 @@ function PageEditor({ page, data, setData, onSave }: any) {
                   </div>
                 ) : (
                   <label className="text-sm">
-                    <span className="mb-1 block text-slate-500 capitalize">{key.replaceAll('_', ' ')}</span>
+                    <span className="mb-1 block text-slate-500">{fieldLabels[key] || key.replaceAll('_', ' ')}</span>
                     {isUrlField(key) ? (
                       <input
                         type="url"
@@ -556,7 +652,7 @@ function PageEditor({ page, data, setData, onSave }: any) {
           </div>
         </div>
       ))}
-      <Button onClick={() => onSave(page)} className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Save Page</Button>
+      <Button onClick={() => onSave(page)} className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Sahifani saqlash</Button>
     </div>
   );
 }
@@ -591,9 +687,9 @@ function CrudLayout({ title, form, list, onSubmit }: any) {
   return (
     <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
       <form onSubmit={onSubmit} className="admin-card h-fit space-y-3">
-        <h3 className="font-bold flex items-center gap-2"><Plus className="size-4" /> {title} Editor</h3>
+        <h3 className="font-bold flex items-center gap-2"><Plus className="size-4" /> {title} tahriri</h3>
         {form}
-        <Button className="w-full bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Save</Button>
+        <Button className="w-full bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Saqlash</Button>
       </form>
       <div className="admin-card">{list}</div>
     </div>
@@ -614,7 +710,7 @@ function StaffForm({ form, setForm }: any) {
       <FormFields form={form} setForm={setForm} fields={['name', 'position', 'description', 'order_num']} file />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={form.is_active !== false} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
-        Active on About page
+        Maktab haqida sahifasida ko‘rsatish
       </label>
     </>
   );
@@ -624,8 +720,8 @@ function ContentForm({ form, setForm, gallery }: any) {
   return (
     <>
       <FormFields form={form} setForm={setForm} fields={gallery ? ['title', 'description', 'album', 'video_url'] : ['title', 'description', 'content_text', 'slug', 'publish_date']} file />
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_published} onChange={e => setForm({ ...form, is_published: e.target.checked })} /> Published</label>
-      {gallery && <select className="admin-input" value={form.media_type} onChange={e => setForm({ ...form, media_type: e.target.value })}><option value="image">Image</option><option value="video">Video</option></select>}
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_published} onChange={e => setForm({ ...form, is_published: e.target.checked })} /> Eʼlon qilingan</label>
+      {gallery && <select className="admin-input" value={form.media_type} onChange={e => setForm({ ...form, media_type: e.target.value })}><option value="image">Rasm</option><option value="video">Video</option></select>}
     </>
   );
 }
@@ -635,7 +731,7 @@ function FormFields({ form, setForm, fields, file }: any) {
     <>
       {fields.map((field: string) => (
         <label key={field} className="block text-sm">
-          <span className="mb-1 block text-slate-500 capitalize">{field.replaceAll('_', ' ')}</span>
+          <span className="mb-1 block text-slate-500">{fieldLabels[field] || field.replaceAll('_', ' ')}</span>
           {field.includes('bio') || field.includes('content') || field.includes('description') ? (
             <textarea className="admin-input min-h-24" value={form[field] || ''} onChange={e => setForm({ ...form, [field]: e.target.value })} />
           ) : (
@@ -643,25 +739,25 @@ function FormFields({ form, setForm, fields, file }: any) {
           )}
         </label>
       ))}
-      {file && <label className="block text-sm"><span className="mb-1 flex items-center gap-1 text-slate-500"><Upload className="size-4" /> Upload media</span><input className="admin-input" type="file" onChange={e => setForm({ ...form, image: e.target.files?.[0] })} /></label>}
+      {file && <label className="block text-sm"><span className="mb-1 flex items-center gap-1 text-slate-500"><Upload className="size-4" /> Media yuklash</span><input className="admin-input" type="file" onChange={e => setForm({ ...form, image: e.target.files?.[0] })} /></label>}
     </>
   );
 }
 
 function ContentList({ items, edit, remove, publish }: any) {
-  return <DataList items={items} render={(item: ContentItem) => <><span className="font-semibold">{item.title}</span><span className="text-xs text-slate-500">{item.category} | {item.views || 0} views | {item.is_published ? 'Published' : 'Draft'}</span></>} edit={edit} remove={remove} extra={(item: ContentItem) => !item.is_published && <button onClick={() => publish(item.id)} className="admin-icon-button"><Upload className="size-4" /></button>} />;
+  return <DataList items={items} render={(item: ContentItem) => <><span className="font-semibold">{item.title}</span><span className="text-xs text-slate-500">{item.category === 'gallery' ? 'Galereya' : 'Yangilik'} | {item.views || 0} koʻrish | {item.is_published ? 'Eʼlon qilingan' : 'Qoralama'}</span></>} edit={edit} remove={remove} extra={(item: ContentItem) => !item.is_published && <button onClick={() => publish(item.id)} className="admin-icon-button"><Upload className="size-4" /></button>} />;
 }
 
 function TeacherList({ teachers, edit, remove }: any) {
-  return <DataList items={teachers} render={(item: Teacher) => <><span className="font-semibold">{item.name}</span><span className="text-xs text-slate-500">{item.subject} | {item.experience_years} years | {item.phone}</span></>} edit={edit} remove={remove} />;
+  return <DataList items={teachers} render={(item: Teacher) => <><span className="font-semibold">{item.name}</span><span className="text-xs text-slate-500">{item.subject} | {item.experience_years} yil | {item.phone}</span></>} edit={edit} remove={remove} />;
 }
 
 function StudentList({ students, edit, remove, mark }: any) {
-  return <DataList items={students} render={(item: Student) => <><span className="font-semibold">{item.name}</span><span className="text-xs text-slate-500">{item.grade} {item.class_name} | {item.group || 'No group'} | Attendance: {item.attendance?.length || 0}</span></>} edit={edit} remove={remove} extra={(item: Student) => <button onClick={() => mark(item.id)} className="admin-icon-button"><Activity className="size-4" /></button>} />;
+  return <DataList items={students} render={(item: Student) => <><span className="font-semibold">{item.name}</span><span className="text-xs text-slate-500">{item.grade} {item.class_name} | {item.group || 'Guruh yoʻq'} | Davomat: {item.attendance?.length || 0}</span></>} edit={edit} remove={remove} extra={(item: Student) => <button onClick={() => mark(item.id)} className="admin-icon-button"><Activity className="size-4" /></button>} />;
 }
 
 function StaffList({ staff, edit, remove }: any) {
-  return <DataList items={staff} render={(item: StaffMember) => <><span className="font-semibold">{item.order_num}. {item.name}</span><span className="text-xs text-slate-500">{item.position} | {item.is_active === false ? 'Hidden' : 'Active'}</span><span className="text-xs text-slate-400 line-clamp-1">{item.description}</span></>} edit={edit} remove={remove} />;
+  return <DataList items={staff} render={(item: StaffMember) => <><span className="font-semibold">{item.order_num}. {item.name}</span><span className="text-xs text-slate-500">{item.position} | {item.is_active === false ? 'Yashirilgan' : 'Faol'}</span><span className="text-xs text-slate-400 line-clamp-1">{item.description}</span></>} edit={edit} remove={remove} />;
 }
 
 function DataList({ items, render, edit, remove, extra }: any) {
@@ -677,7 +773,7 @@ function DataList({ items, render, edit, remove, extra }: any) {
           </div>
         </div>
       ))}
-      {!items.length && <p className="text-sm text-slate-500">No records found.</p>}
+      {!items.length && <p className="text-sm text-slate-500">Maʼlumot topilmadi.</p>}
     </div>
   );
 }
@@ -685,8 +781,8 @@ function DataList({ items, render, edit, remove, extra }: any) {
 function Logs({ logs, notifications }: any) {
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <div className="admin-card"><h3 className="font-bold mb-3">Activity Logs</h3><DataFeed items={logs} /></div>
-      <div className="admin-card"><h3 className="font-bold mb-3">Notifications</h3><DataFeed items={notifications} /></div>
+      <div className="admin-card"><h3 className="font-bold mb-3">Faoliyat jurnali</h3><DataFeed items={logs} /></div>
+      <div className="admin-card"><h3 className="font-bold mb-3">Bildirishnomalar</h3><DataFeed items={notifications} /></div>
     </div>
   );
 }
@@ -703,11 +799,11 @@ function notificationClass(item: any) {
 
 function getPasswordChecks(password: string) {
   return [
-    ['At least 8 characters', password.length >= 8],
-    ['Uppercase letter', /[A-Z]/.test(password)],
-    ['Lowercase letter', /[a-z]/.test(password)],
-    ['Number', /[0-9]/.test(password)],
-    ['Special character', /[!@#$%^&*(),.?":{}|<>]/.test(password)]
+    ['Kamida 8 ta belgi', password.length >= 8],
+    ['Katta harf', /[A-Z]/.test(password)],
+    ['Kichik harf', /[a-z]/.test(password)],
+    ['Raqam', /[0-9]/.test(password)],
+    ['Maxsus belgi', /[!@#$%^&*(),.?":{}|<>]/.test(password)]
   ] as const;
 }
 
@@ -718,37 +814,37 @@ function SecurityPanel({ passwordForm, setPasswordForm, secretKey, setSecretKey,
   return (
     <div className="grid gap-6 xl:grid-cols-2">
       <form onSubmit={onChangePassword} className="admin-card space-y-4">
-        <h3 className="font-bold flex items-center gap-2"><KeyRound className="size-4" /> Password Security</h3>
+        <h3 className="font-bold flex items-center gap-2"><KeyRound className="size-4" /> Parol xavfsizligi</h3>
         <label className="block text-sm">
-          <span className="mb-1 block text-slate-500">Current password</span>
+          <span className="mb-1 block text-slate-500">Hozirgi parol</span>
           <input className="admin-input" type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block text-slate-500">New password</span>
+          <span className="mb-1 block text-slate-500">Yangi parol</span>
           <input className="admin-input" type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} />
         </label>
         <div className="rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700">
           <div className="mb-2 flex items-center justify-between">
-            <span>Password strength</span>
+            <span>Parol mustahkamligi</span>
             <span className={strongCount === checks.length ? 'text-green-600' : 'text-amber-600'}>{strongCount}/{checks.length}</span>
           </div>
           <div className="grid gap-1">
             {checks.map(([label, passed]) => (
-              <span key={label} className={passed ? 'text-green-600' : 'text-slate-500'}>{passed ? 'OK' : 'NO'} - {label}</span>
+              <span key={label} className={passed ? 'text-green-600' : 'text-slate-500'}>{passed ? 'Ha' : 'Yoʻq'} - {label}</span>
             ))}
           </div>
         </div>
-        <Button className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Change Password</Button>
+        <Button className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Parolni oʻzgartirish</Button>
       </form>
 
       <form onSubmit={onUpdateSecretKey} className="admin-card h-fit space-y-4">
-        <h3 className="font-bold flex items-center gap-2"><Shield className="size-4" /> Secret Key</h3>
-        <p className="text-sm text-slate-500">Used for secure password recovery. Minimum 16 characters.</p>
+        <h3 className="font-bold flex items-center gap-2"><Shield className="size-4" /> Maxfiy soʻz</h3>
+        <p className="text-sm text-slate-500">Parolni xavfsiz tiklash uchun ishlatiladi. Kamida 16 ta belgi.</p>
         <label className="block text-sm">
-          <span className="mb-1 block text-slate-500">New secret key</span>
+          <span className="mb-1 block text-slate-500">Yangi maxfiy soʻz</span>
           <input className="admin-input" type="password" value={secretKey} onChange={(e) => setSecretKey(e.target.value)} />
         </label>
-        <Button className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Update Secret Key</Button>
+        <Button className="bg-cyan-700 hover:bg-cyan-800"><Save className="mr-2 size-4" />Maxfiy soʻzni yangilash</Button>
       </form>
     </div>
   );
@@ -766,16 +862,16 @@ function toFormData(source: Record<string, any>, fileKeys: string[]) {
 }
 
 const navItems: Array<{ id: AdminTab; label: string; icon: any }> = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'home', label: 'Home Page', icon: Home },
-  { id: 'about', label: 'About Us', icon: BookOpen },
-  { id: 'staff', label: 'Administration', icon: Shield },
-  { id: 'teachers', label: 'Teachers', icon: GraduationCap },
-  { id: 'students', label: 'Students', icon: Users },
-  { id: 'news', label: 'News', icon: FileText },
-  { id: 'gallery', label: 'Gallery', icon: GalleryHorizontalEnd },
-  { id: 'contact', label: 'Contact', icon: Contact },
-  { id: 'footer', label: 'Footer', icon: BookOpen },
-  { id: 'security', label: 'Security', icon: KeyRound },
-  { id: 'logs', label: 'Logs', icon: Bell }
+  { id: 'dashboard', label: 'Boshqaruv', icon: LayoutDashboard },
+  { id: 'home', label: 'Bosh sahifa', icon: Home },
+  { id: 'about', label: 'Maktab haqida', icon: BookOpen },
+  { id: 'staff', label: 'Maʼmuriyat', icon: Shield },
+  { id: 'teachers', label: 'Oʻqituvchilar', icon: GraduationCap },
+  { id: 'students', label: 'Oʻquvchilar', icon: Users },
+  { id: 'news', label: 'Yangiliklar', icon: FileText },
+  { id: 'gallery', label: 'Galereya', icon: GalleryHorizontalEnd },
+  { id: 'contact', label: 'Aloqa', icon: Contact },
+  { id: 'footer', label: 'Pastki qism', icon: BookOpen },
+  { id: 'security', label: 'Xavfsizlik', icon: KeyRound },
+  { id: 'logs', label: 'Jurnal', icon: Bell }
 ];

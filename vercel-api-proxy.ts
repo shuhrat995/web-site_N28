@@ -37,7 +37,22 @@ const HOP_BY_HOP_HEADERS = new Set([
   'upgrade'
 ]);
 
-const admins: AdminAccount[] = [
+type PersistedRuntime = {
+  admins: AdminAccount[];
+  notifications: any[];
+  logs: any[];
+  state: {
+    content: any[];
+    teachers: any[];
+    students: any[];
+    staff: any[];
+    sections: Record<string, any>;
+    settings: any[];
+  };
+  nextId: number;
+};
+
+const defaultAdmins: AdminAccount[] = [
   {
     id: 1,
     username: process.env.ADMIN_USERNAME || 'admin',
@@ -55,6 +70,7 @@ const admins: AdminAccount[] = [
 ];
 
 const runtime = ((globalThis as any).__maktab28Runtime ||= {
+  admins: defaultAdmins.map((admin) => ({ ...admin })),
   attempts: new Map<string, AttemptState>(),
   notifications: [] as any[],
   logs: [] as any[],
@@ -69,6 +85,7 @@ const runtime = ((globalThis as any).__maktab28Runtime ||= {
   nextId: 1
 });
 
+const admins = runtime.admins as AdminAccount[];
 const attempts = runtime.attempts as Map<string, AttemptState>;
 const notifications = runtime.notifications as any[];
 const logs = runtime.logs as any[];
@@ -85,6 +102,125 @@ function allocateId() {
   const id = runtime.nextId;
   runtime.nextId += 1;
   return id;
+}
+
+function getDatabaseUrl() {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || '';
+}
+
+let dbSqlPromise: Promise<any> | null | false = null;
+let dbInitialized = false;
+
+async function getSql() {
+  const databaseUrl = getDatabaseUrl();
+  if (!databaseUrl) return null;
+  if (dbSqlPromise === false) return null;
+
+  if (!dbSqlPromise) {
+    dbSqlPromise = import('@neondatabase/serverless')
+      .then((mod: any) => mod.neon(databaseUrl))
+      .catch((error: any) => {
+        console.error('Neon driver load failed:', error);
+        dbSqlPromise = false;
+        return null;
+      });
+  }
+
+  return dbSqlPromise;
+}
+
+function snapshotRuntime(): PersistedRuntime {
+  return {
+    admins,
+    notifications,
+    logs,
+    state,
+    nextId: runtime.nextId
+  };
+}
+
+function applyPersistedRuntime(data: Partial<PersistedRuntime> | null | undefined) {
+  if (!data) return;
+
+  admins.splice(0, admins.length, ...mergeAdmins(data.admins || []));
+  notifications.splice(0, notifications.length, ...(Array.isArray(data.notifications) ? data.notifications : []));
+  logs.splice(0, logs.length, ...(Array.isArray(data.logs) ? data.logs : []));
+
+  const persistedState = (data.state || {}) as Partial<PersistedRuntime['state']>;
+  state.content = Array.isArray(persistedState.content) ? persistedState.content : [];
+  state.teachers = Array.isArray(persistedState.teachers) ? persistedState.teachers : [];
+  state.students = Array.isArray(persistedState.students) ? persistedState.students : [];
+  state.staff = Array.isArray(persistedState.staff) ? persistedState.staff : [];
+  state.sections = persistedState.sections && typeof persistedState.sections === 'object' ? persistedState.sections : {};
+  state.settings = Array.isArray(persistedState.settings) ? persistedState.settings : [];
+  runtime.state = state;
+  runtime.nextId = Math.max(Number(data.nextId || 1), getMaxUsedId() + 1);
+}
+
+function mergeAdmins(persistedAdmins: AdminAccount[]) {
+  const byUsername = new Map<string, AdminAccount>();
+  for (const admin of defaultAdmins) byUsername.set(admin.username, { ...admin });
+  for (const admin of persistedAdmins) {
+    if (admin?.username) byUsername.set(admin.username, { ...admin });
+  }
+  return [...byUsername.values()];
+}
+
+function getMaxUsedId() {
+  const ids = [
+    ...admins.map((item) => Number(item.id || 0)),
+    ...notifications.map((item) => Number(item.id || 0)),
+    ...logs.map((item) => Number(item.id || 0)),
+    ...state.content.map((item) => Number(item.id || 0)),
+    ...state.teachers.map((item) => Number(item.id || 0)),
+    ...state.students.map((item) => Number(item.id || 0)),
+    ...state.staff.map((item) => Number(item.id || 0)),
+    ...state.settings.map((item) => Number(item.id || 0))
+  ];
+  return Math.max(0, ...ids.filter(Number.isFinite));
+}
+
+async function ensureDb() {
+  const sql = await getSql();
+  if (!sql) return null;
+  if (!dbInitialized) {
+    await sql`
+      CREATE TABLE IF NOT EXISTS maktab28_store (
+        key TEXT PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    dbInitialized = true;
+  }
+  return sql;
+}
+
+async function loadPersistedRuntime() {
+  const sql = await ensureDb();
+  if (!sql) return false;
+
+  const rows = await sql`SELECT value FROM maktab28_store WHERE key = 'runtime' LIMIT 1`;
+  if (!rows.length) {
+    await savePersistedRuntime();
+    return true;
+  }
+
+  applyPersistedRuntime(rows[0].value);
+  return true;
+}
+
+async function savePersistedRuntime() {
+  const sql = await ensureDb();
+  if (!sql) return false;
+
+  await sql`
+    INSERT INTO maktab28_store (key, value, updated_at)
+    VALUES ('runtime', ${JSON.stringify(snapshotRuntime())}::jsonb, NOW())
+    ON CONFLICT (key)
+    DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+  `;
+  return true;
 }
 
 function normalizeOrigin(origin: string) {
@@ -442,6 +578,7 @@ async function handleAuth(req: any, res: any, path: string) {
       addDangerNotice(
         `Admin panelga kirishga urinish bloklandi. Login: ${username}, IP: ${clientIp(req)}, xato urinishlar: ${allowed.failedCount}, kutish: ${Math.ceil(allowed.retryAfter / 60)} daqiqa.`
       );
+      await savePersistedRuntime();
       return res.status(429).json({
         error: `Juda ko'p xato urinish. ${Math.ceil(allowed.retryAfter / 60)} daqiqadan keyin urinib ko'ring.`,
         retryAfter: allowed.retryAfter
@@ -451,6 +588,7 @@ async function handleAuth(req: any, res: any, path: string) {
     const admin = admins.find((item) => item.username === username && item.password === password);
     if (!admin) {
       const failed = recordFailedLogin(req, username);
+      await savePersistedRuntime();
       if (failed.retryAfter) {
         return res.status(429).json({
           error: `3 marta xato kiritildi. ${Math.ceil(failed.retryAfter / 60)} daqiqa kuting.`,
@@ -464,6 +602,7 @@ async function handleAuth(req: any, res: any, path: string) {
     const token = createToken(admin.id);
     admin.last_login = nowIso();
     addLog(`Admin kirdi: ${admin.username}`, 'login');
+    await savePersistedRuntime();
     setCookie(res, token);
     return res.status(200).json({
       message: 'Login successful',
@@ -496,6 +635,7 @@ async function handleAuth(req: any, res: any, path: string) {
 
     admin.password = newPassword;
     addLog(`Admin parol o'zgartirdi: ${admin.username}`, 'security');
+    await savePersistedRuntime();
     return res.status(200).json({ message: 'Password changed successfully' });
   }
 
@@ -505,6 +645,7 @@ async function handleAuth(req: any, res: any, path: string) {
     if (secretKey.length < 16) return res.status(400).json({ error: 'Secret key must be at least 16 characters' });
     admin.secretKey = secretKey;
     addLog(`Admin maxfiy so'zni yangiladi: ${admin.username}`, 'security');
+    await savePersistedRuntime();
     return res.status(200).json({ message: 'Secret key updated successfully' });
   }
 
@@ -512,6 +653,8 @@ async function handleAuth(req: any, res: any, path: string) {
 }
 
 async function handleLocalApi(req: any, res: any) {
+  await loadPersistedRuntime();
+
   const url = new URL(req.url || '/', 'https://admin.local');
   const rewrittenPath = url.searchParams.get('path');
   const path = rewrittenPath
@@ -551,6 +694,7 @@ async function handleLocalApi(req: any, res: any) {
     if (method === 'PUT' || method === 'POST') {
       state.sections[page] = await parseBody(req);
       addLog(`${page} sahifa kontenti saqlandi`, 'update');
+      await savePersistedRuntime();
       return res.status(200).json({ message: 'Section updated', content: state.sections[page] });
     }
   }
@@ -564,6 +708,7 @@ async function handleLocalApi(req: any, res: any) {
         const item = { id: allocateId(), ...body, is_active: body.is_active ?? true, is_published: body.is_published ?? true, created_at: nowIso() };
         collection.unshift(item);
         addLog(`${name} yaratildi`, 'create');
+        await savePersistedRuntime();
         return res.status(201).json({ message: 'Created', [singularName(name)]: item });
       }
     }
@@ -587,12 +732,14 @@ async function handleLocalApi(req: any, res: any) {
           collection[index] = { ...collection[index], ...body, updated_at: nowIso() };
         }
         addLog(`${name} yangilandi`, 'update');
+        await savePersistedRuntime();
         return res.status(200).json({ message: 'Updated', [singularName(name)]: index >= 0 ? collection[index] : null });
       }
 
       if (method === 'DELETE') {
         if (index >= 0) collection.splice(index, 1);
         addLog(`${name} o'chirildi`, 'delete');
+        await savePersistedRuntime();
         return res.status(200).json({ message: 'Deleted' });
       }
     }
@@ -600,6 +747,7 @@ async function handleLocalApi(req: any, res: any) {
 
   if (path === '/api/contact' && method === 'POST') {
     addLog('Kontakt formadan xabar yuborildi', 'contact');
+    await savePersistedRuntime();
     return res.status(200).json({ message: 'Message sent' });
   }
 
